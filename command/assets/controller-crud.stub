@@ -1,0 +1,172 @@
+import {NextFunction, Request, Response, Router} from "express";
+import {body, validationResult} from "express-validator";
+import {User} from "../../entity";
+import {DATA_NOT_FOUND} from "../../utils/base";
+
+export const NAMERouteController = () => {
+    const router = Router();
+
+    router.get('/', NAMEIndexController);
+    router.get('/:id', NAMEDetailController);
+    router.post('/', NAMEStoreValidateController, NAMEStoreController);
+    router.put('/:id', NAMEUpdateValidateController, NAMEUpdateController);
+    router.delete('/:id', NAMEDestroyController);
+
+    return router;
+}
+
+export const NAMEStoreValidateController = [
+    body("name").notEmpty().trim().escape(),
+];
+
+export const NAMEUpdateValidateController = [
+    body("name").optional().trim().escape(),
+];
+
+export const NAMEIndexController = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // pagination builder
+        const page = req.query.page ? parseInt(<string>req.query.page) : 1;
+        const take = req.query.limit ? parseInt(<string>req.query.limit) : 10;
+        const skip = (page - 1) * take;
+
+        const query = await User.find({
+            take,
+            skip,
+            order: {
+                created_at: "DESC"
+            }
+        });
+        const total = await User.count();
+
+        return res.json({
+            code: 200,
+            message: "success",
+            data: {
+                items: query,
+                page: page,
+                total: total,
+                limit: take,
+            }
+        })
+    } catch (e) {
+        next(e)
+    }
+}
+
+export const NAMEDetailController = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const {id} = req.params;
+
+        const query = await User.findOne(id);
+
+        if (!query) {
+            throw new Error(DATA_NOT_FOUND);
+        }
+
+        return res.json({
+            code: 200,
+            message: "success",
+            data: query
+        })
+    } catch (e) {
+        next(e)
+    }
+}
+
+export const NAMEStoreController = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // validate input
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return next(errors);
+        }
+
+        const {
+            name,
+            email,
+            password
+        } = req.body;
+
+        const query = new User();
+        query.name = name;
+        query.email = email;
+        query.password = password;
+        await query.save();
+
+        if (!query) {
+            throw new Error(DATA_NOT_FOUND);
+        }
+
+        return res.json({
+            code: 200,
+            message: "success",
+            data: query
+        })
+    } catch (e) {
+        return next(e)
+    }
+}
+
+export const NAMEUpdateController = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // validate input
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return next(errors);
+        }
+
+        const {
+            id
+        } = req.params;
+
+        const {
+            name,
+            email,
+            password
+        } = req.body;
+
+        const query = await User.findOne(id);
+
+        if (!query) {
+            throw new Error(DATA_NOT_FOUND);
+        }
+
+        query.name = name;
+        query.email = email;
+        query.password = password;
+        await query.save();
+
+        return res.json({
+            code: 200,
+            message: "success",
+            data: null
+        })
+    } catch (e) {
+        next(e)
+    }
+}
+
+export const NAMEDestroyController = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const {
+            id
+        } = req.params;
+
+        const query = await User.findOne(id);
+
+        if (!query) {
+            throw new Error(DATA_NOT_FOUND);
+        }
+
+        await query.remove();
+
+        return res.json({
+            code: 200,
+            message: "success",
+            data: null
+        })
+    } catch (e) {
+        next(e)
+    }
+}

@@ -1,0 +1,397 @@
+import {NextFunction, Request, Response, Router} from "express";
+import {matchedData, validationResult} from "express-validator";
+import {DATA_NOT_FOUND} from "~/utils/base";
+
+export class BaseController {
+    /**
+     * Default Variable For Model Instance
+     */
+    public model;
+
+    /**
+     * Default Model Relation
+     *
+     * Example: ["user"]
+     */
+    public modelRelation = [];
+
+    /**
+     * Disable Default Routes Based on Function Name
+     *
+     * Example: ["store", "update", "destroy"]
+     */
+    public routeDisableList = [];
+
+    /**
+     * Index Default Where Clause Query
+     *
+     * Example: {name: "john"}
+     */
+    public indexWhere = {};
+
+    /**
+     * Detail Default Where Clause Query
+     *
+     * Example: {name: "john"}
+     */
+    public detailWhere = {};
+
+    /**
+     * Default Variable For Validate Store Function
+     *
+     * Example: [body("name").optional().trim().escape()]
+     */
+    public storeValidate = [];
+
+    /**
+     * Include Optional Data in Store Body
+     */
+    public storeIncludeOptional = false;
+
+    /**
+     * Running Custom Function Inside Store Function
+     * You must create function: customStore(body);
+     *
+     * Default: false
+     */
+    public storeExtends = false;
+
+    /**
+     * Default Variable For Validate Update Function
+     *
+     * Example: [body("name").optional().trim().escape()]
+     */
+    public updateValidate = [];
+
+    /**
+     * Include Optional Data in Update Body
+     */
+    public updateIncludeOptional = true;
+
+    /**
+     * Running Custom Function Inside Update Function
+     * You must create function: customUpdate(body);
+     *
+     * Default: false
+     */
+    public updateExtends = false;
+
+    /**
+     * Init Default Model in Runtime
+     *
+     * @param name
+     */
+    constructor(name) {
+        this.model = name;
+    }
+
+    /**
+     * Function List All CRUD in this Class
+     * Default bind this to reference inside Class
+     */
+    routes() {
+        const router = Router();
+
+        // check if index route is disable or not
+        if(!this.routeDisableList.includes("index")) {
+            router.get('/', this.index.bind(this));
+        }
+
+        // check if detail route is disable or not
+        if(!this.routeDisableList.includes("detail")) {
+            router.get('/:id', this.detail.bind(this));
+        }
+
+        // check if store route is disable or not
+        if(!this.routeDisableList.includes("store")) {
+            router.post('/', this.storeValidate, this.store.bind(this));
+        }
+
+        // check if update route is disable or not
+        if(!this.routeDisableList.includes("update")) {
+            router.put('/:id', this.updateValidate, this.update.bind(this));
+        }
+
+        // check if destroy route is disable or not
+        if(!this.routeDisableList.includes("destroy")) {
+            router.delete('/:id', this.destroy.bind(this));
+        }
+
+        return router;
+    }
+
+    errorFormatter ({ location, msg, param, value, nestedErrors }) {
+        // Build your resulting errors however you want! String, object, whatever - it works!
+        const err = {};
+        err[param] = msg;
+
+        return err;
+    };
+
+    /**
+     * This function running for list all data in Database
+     *
+     * @param req
+     * @param res
+     * @param next
+     */
+    async index(req: Request, res: Response, next: NextFunction) {
+        try {
+            // pagination builder
+            const page = req.query.page ? parseInt(<string>req.query.page) : 1;
+            const take = req.query.limit ? parseInt(<string>req.query.limit) : 10;
+            const skip = (page - 1) * take;
+            let orderBy = req.query.orderBy || "created_at:desc";
+            orderBy = orderBy.toString().split(":");
+
+            const order = [];
+            order[orderBy[0]] = orderBy[1];
+
+            const query = await this.model.find({
+                take,
+                skip,
+                relations: this.modelRelation,
+                where: this.indexWhere,
+                order: order
+            });
+            const total = await this.model.count({ where: this.indexWhere });
+
+            return res.json({
+                code: 200,
+                message: "success",
+                data: {
+                    items: query,
+                    page: page,
+                    total: total,
+                    limit: take,
+                }
+            })
+        } catch (e) {
+            next(e)
+        }
+    }
+
+    /**
+     * This function running for check data by ID
+     *
+     * @param req
+     * @param res
+     * @param next
+     */
+    async detail(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+
+            const query = await this.model.findOne(id, {relations: this.modelRelation, where: this.detailWhere});
+
+            if (!query) {
+                throw new Error(DATA_NOT_FOUND);
+            }
+
+            return res.json({
+                code: 200,
+                message: "success",
+                data: query
+            })
+        } catch (e) {
+            next(e)
+        }
+    }
+
+    /**
+     * Extends this function for replace function inside store function
+     *
+     * @param body
+     */
+    async customStore(body) {}
+
+    /**
+     * Extends this function for running before store function
+     *
+     * @param body
+     */
+    async beforeStore(body) {}
+
+    /**
+     * Extends this function for running after store function
+     *
+     * @param body
+     * @param query
+     */
+    async afterStore(body, query) {}
+
+    /**
+     * This function running for save data to database
+     *
+     * @param req
+     * @param res
+     * @param next
+     */
+    async store(req: Request, res: Response, next: NextFunction) {
+        try {
+            // validate input
+            const errors = validationResult(req).formatWith(this.errorFormatter);
+            if (!errors.isEmpty()) {
+                return res.status(403).json({
+                    code: 403,
+                    message: "Please check input.!",
+                    errors: errors.array()
+                });
+            }
+
+            // cleanup request body based on express validator
+            const bodyData = matchedData(req, { includeOptionals: this.storeIncludeOptional, locations: ['body'] });
+
+            // dynamic query return
+            let query;
+
+            // check if running store function or not
+            if(this.storeExtends) {
+                query = await this.customStore(bodyData);
+            } else {
+                await this.beforeStore(bodyData);
+
+                // create data
+                query = new this.model();
+
+                // store data based on body
+                for (const [key, value] of Object.entries(bodyData)) {
+                    query[key] = value;
+                }
+
+                // save to database
+                await query.save();
+
+                await this.afterStore(bodyData, query);
+
+                if (!query) {
+                    throw new Error(DATA_NOT_FOUND);
+                }
+            }
+
+            // return response
+            return res.json({
+                code: 200,
+                message: "success",
+                data: query
+            })
+        } catch (e) {
+            return next(e)
+        }
+    }
+
+    /**
+     * Extends this function for replace function inside store function
+     *
+     * @param body
+     */
+    async customUpdate(body) {}
+
+    /**
+     * Extends this function for running before store function
+     *
+     * @param body
+     */
+    async beforeUpdate(body) {}
+
+    /**
+     * Extends this function for running after store function
+     *
+     * @param body
+     * @param query
+     */
+    async afterUpdate(body, query) {}
+
+    /**
+     * This function running when you want update data in Database by ID
+     *
+     * @param req
+     * @param res
+     * @param next
+     */
+    async update(req: Request, res: Response, next: NextFunction) {
+        try {
+            // validate input
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return next(errors);
+            }
+
+            const {
+                id
+            } = req.params;
+
+            // cleanup request body based on express validator
+            const bodyData = matchedData(req, { includeOptionals: this.updateIncludeOptional, locations: ['body'] });
+
+            // dynamic query return
+            let query;
+
+            if(this.updateExtends) {
+                query = await this.customUpdate(bodyData);
+            } else {
+                await this.beforeUpdate(bodyData);
+
+                // search if data exist
+                query = await this.model.findOne(id);
+
+                if (!query) {
+                    throw new Error(DATA_NOT_FOUND);
+                }
+
+                // update data based on body
+                for (const [key, value] of Object.entries(bodyData)) {
+                    query[key] = value;
+                }
+
+                // run query update
+                await query.save();
+
+                await this.afterUpdate(bodyData, query);
+            }
+
+            // return response
+            return res.json({
+                code: 200,
+                message: "success",
+                data: null
+            })
+        } catch (e) {
+            next(e)
+        }
+    }
+
+    /**
+     * This function running when you want delete data in Database by ID
+     *
+     * @param req
+     * @param res
+     * @param next
+     */
+    async destroy(req: Request, res: Response, next: NextFunction) {
+        try {
+            const {
+                id
+            } = req.params;
+
+            // search if data exist
+            const query = await this.model.findOne(id);
+
+            if (!query) {
+                throw new Error(DATA_NOT_FOUND);
+            }
+
+            // run query for delete data
+            await query.remove();
+
+            // return response
+            return res.json({
+                code: 200,
+                message: "success",
+                data: null
+            })
+        } catch (e) {
+            next(e)
+        }
+    }
+}

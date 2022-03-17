@@ -1,0 +1,27 @@
+import {NextFunction, Request, Response, Router} from "express";
+import {body, validationResult} from "express-validator";
+import {DATA_NOT_FOUND} from "../../utils/base";
+
+export const NAMERouteController = () => {
+    const router = Router();
+
+    router.get('/', NAMEExampleController);
+
+    return router;
+}
+
+export const NAMEExampleController = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+
+        // do something here
+
+
+        return res.json({
+            code: 200,
+            message: "success",
+            data: null
+        })
+    } catch (e) {
+        next(e)
+    }
+}

@@ -1,0 +1,62 @@
+import { body } from "express-validator";
+import { BaseController } from "~/lib";
+import { User } from "~/entity";
+
+export class NAMEController extends BaseController {
+
+    // update validation store array
+    override storeValidate = [
+        body("userMasterId").notEmpty().trim().escape().isUUID(4),
+        body("name").notEmpty().trim().escape(),
+        body("group").notEmpty().trim().escape(),
+        body("email")
+            .notEmpty()
+            .isEmail()
+            .normalizeEmail()
+            .custom((value) => {
+                return User.findOne({email: value})
+                    .then((data) => {
+                        if (data) {
+                            return Promise.reject('E-mail already in use');
+                        }
+                    })
+            }),
+        body("password").notEmpty()
+            .isLength({min: 6})
+            .withMessage('must be at least 5 chars long')
+            .matches(/\d/)
+            .withMessage('must contain a number'),
+        body("isActive").optional().isBoolean(),
+    ]
+
+    // update validation update array
+    override updateValidate = [
+        body("userMasterId").optional().trim().escape().isUUID(4),
+        body("name").optional().trim().escape(),
+        body("group").optional().trim().escape(),
+        body("email")
+            .optional()
+            .isEmail()
+            .normalizeEmail()
+            .custom((value) => {
+                return User.findOne({email: value})
+                    .then((data) => {
+                        if (data) {
+                            return Promise.reject('E-mail already in use');
+                        }
+                    })
+            }),
+        body("password").optional()
+            .isLength({min: 6})
+            .withMessage('must be at least 5 chars long')
+            .matches(/\d/)
+            .withMessage('must contain a number'),
+        body("isActive").optional().isBoolean(),
+    ]
+
+    constructor() {
+        // setup default model
+        super(User);
+    }
+
+}

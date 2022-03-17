@@ -1,0 +1,81 @@
+name: Deploy Main Branch
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [ 14.x ]
+    steps:
+      - name: Clone Repository
+        uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Install Dependencies
+        run: npm ci
+      - name: Build Artifact
+        run: npm run build
+      - name: Generate Serverless Files
+        env:
+          NODE_ENV: "pr"
+        run: |
+          npx sls print --stage prod > build/serverless.yml
+      - name: Archive Artifact
+        run: |
+          cd build
+          ls -lha
+          tar -czf /tmp/artifact.tar.gz --exclude "./.git" --exclude "./.github" .
+      - name: List Files Code
+        run: ls -lha
+      - name: List Files Build
+        run: ls -lha build
+      - name: List Files Artifact
+        run: ls -lha /tmp
+      - name: Upload Artifact to S3 Bucket
+        run: aws s3 cp /tmp/artifact.tar.gz s3://btc-artifact-build/prod/
+      - name: Delete Temp Artifact Archive
+        run: rm -rf /tmp/artifact.tar.gz
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        node-version: [ 14.x ]
+    steps:
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Get Share Artifact
+        run: aws s3 cp s3://btc-artifact-build/prod/artifact.tar.gz .
+      - name: Extract Artifact
+        run: tar fxz artifact.tar.gz
+      - name: Cleanup Files
+        run: |
+          rm -rf artifact.tar.gz
+          rm -rf ecosystem.config*
+          rm -rf ormconfig*
+      - name: Inspect Serverless Scripts
+        run: cat serverless.yml && ls -l && pwd
+      - name: Deploy to Serverless
+        run: npx serverless deploy --stage prod
