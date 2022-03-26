@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import type { AWS } from '@serverless/typescript';
 
 const serverlessConfiguration: AWS = {
@@ -27,51 +28,8 @@ const serverlessConfiguration: AWS = {
                 statements: [
                     {
                         Effect: 'Allow',
-                        Action: ['ses:SendEmail', 'ses:SendRawEmail'],
+                        Action: '*',
                         Resource: '*',
-                    },
-                    {
-                        Effect: 'Allow',
-                        Action: ['s3:ListBucket'],
-                        Resource: [
-                            {
-                                'Fn::Join': [
-                                    '',
-                                    [
-                                        {
-                                            'Fn::GetAtt': ['S3BucketAssets', 'Arn'],
-                                        },
-                                    ],
-                                ],
-                            },
-                        ],
-                    },
-                    {
-                        Effect: 'Allow',
-                        Action: ['s3:GetObject', 's3:PutObject', 's3:PutObjectAcl', 's3:DeleteObject'],
-                        Resource: [
-                            {
-                                'Fn::Join': [
-                                    '',
-                                    [
-                                        {
-                                            'Fn::GetAtt': ['S3BucketAssets', 'Arn'],
-                                        },
-                                    ],
-                                ],
-                            },
-                            {
-                                'Fn::Join': [
-                                    '',
-                                    [
-                                        {
-                                            'Fn::GetAtt': ['S3BucketAssets', 'Arn'],
-                                        },
-                                        '/*',
-                                    ],
-                                ],
-                            },
-                        ],
                     },
                 ],
             },
@@ -161,6 +119,26 @@ const serverlessConfiguration: AWS = {
                         IgnorePublicAcls: false,
                         RestrictPublicBuckets: false,
                     },
+                },
+            },
+            SESNotification: {
+                Type: 'AWS::SNS::Topic',
+                Properties: {
+                    TopicName: '${self:provider.stage}-${self:service}-notification',
+                    Subscription: [
+                        {
+                            Endpoint: 'arn:aws:lambda:ap-southeast-2:020350247430:function:lo-extractor-api-prod-app',
+                            Protocol: 'lambda',
+                        },
+                    ],
+                },
+            },
+            LambdaPermission: {
+                Type: 'AWS::Lambda::Permission',
+                Properties: {
+                    Action: 'lambda:InvokeFunction',
+                    FunctionName: 'lo-extractor-api-prod-app',
+                    Principal: 'sns.amazonaws.com',
                 },
             },
         },
