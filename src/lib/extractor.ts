@@ -44,7 +44,7 @@ export const extractor = async (attachmentsId: number, data: string) => {
         },
         FeatureTypes: ['TABLES'],
         NotificationChannel: {
-            RoleArn: 'arn:aws:iam::020350247430:role/lo-extractor-api-prod-ap-southeast-2-lambdaRole',
+            RoleArn: 'arn:aws:iam::020350247430:role/sns-publishing',
             SNSTopicArn: 'arn:aws:sns:ap-southeast-2:020350247430:prod-lo-extractor-api-notification',
         },
         OutputConfig: {
@@ -52,6 +52,8 @@ export const extractor = async (attachmentsId: number, data: string) => {
             S3Prefix: S3_PREFIX,
         },
     };
+
+    console.info('params:', JSON.stringify(params));
 
     const result = await textract.startDocumentAnalysis(params).promise();
 

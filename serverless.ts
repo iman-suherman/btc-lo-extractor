@@ -61,6 +61,14 @@ const serverlessConfiguration: AWS = {
                 },
             ],
         },
+        listener: {
+            handler: 'src/handler.listener',
+            events: [
+                {
+                    sns: '${self:provider.stage}-${self:service}-notification',
+                },
+            ],
+        },
     },
     package: {
         individually: true,
@@ -119,26 +127,6 @@ const serverlessConfiguration: AWS = {
                         IgnorePublicAcls: false,
                         RestrictPublicBuckets: false,
                     },
-                },
-            },
-            SESNotification: {
-                Type: 'AWS::SNS::Topic',
-                Properties: {
-                    TopicName: '${self:provider.stage}-${self:service}-notification',
-                    Subscription: [
-                        {
-                            Endpoint: 'arn:aws:lambda:ap-southeast-2:020350247430:function:lo-extractor-api-prod-app',
-                            Protocol: 'lambda',
-                        },
-                    ],
-                },
-            },
-            LambdaPermission: {
-                Type: 'AWS::Lambda::Permission',
-                Properties: {
-                    Action: 'lambda:InvokeFunction',
-                    FunctionName: 'lo-extractor-api-prod-app',
-                    Principal: 'sns.amazonaws.com',
                 },
             },
         },
