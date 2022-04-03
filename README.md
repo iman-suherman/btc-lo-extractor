@@ -16,16 +16,10 @@
 
 ## Docker
 
-If run locally, you can start **docker-compose up -d** for deploy database PostgreSQL
+If run locally, you can use the following command **docker-compose up -d**
 
 ## Development
 
 1. Copy `.env.example` to `.env`
-2. Install Pacakge with `npm install`
-3. Start Project with `npm run dev:start`
-
-## Controller Generator (CLI)
-
-```bash
-./cli.js generate:controller -v -p admin -n AdminUser
-```
+2. Install Package with `npm install`
+3. Start Project with `npm run dev`

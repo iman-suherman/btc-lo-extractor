@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import AWS from 'aws-sdk';
 
-import { S3_BUCKET, S3_PREFIX } from './constants';
-import { extractText } from './extractText';
+import { ContentType, S3_BUCKET, S3_PREFIX } from './constants';
+import { extractTextEve, extractTextSsbt } from './extractText';
 
 AWS.config.update({ region: 'ap-southeast-2' });
 
@@ -21,13 +21,37 @@ export const getContents = async (jobId: string) => {
         );
     }
 
-    console.info('files', files);
+    let contentType = null;
 
-    const content = await getS3Content(files[0]);
+    const contents = [];
 
-    console.info('First file:', content);
+    for (const file of files) {
+        const content = await getS3Content(file);
 
-    extractText(content);
+        if (content.includes('Sydney School of Business and Technology')) {
+            contentType = ContentType.SSBT;
+        }
+
+        if (content.includes('Eve College')) {
+            contentType = ContentType.EVE;
+        }
+
+        contents.push(JSON.parse(content));
+    }
+
+    let result;
+
+    switch (contentType) {
+        case ContentType.SSBT:
+            result = extractTextSsbt(contents[0]);
+            break;
+
+        case ContentType.EVE:
+            result = extractTextEve(contents[0]);
+            break;
+    }
+
+    console.info('result:', JSON.stringify(result, null, 2));
 };
 
 const getS3Content = async (key: string) => {
@@ -35,7 +59,7 @@ const getS3Content = async (key: string) => {
 
     const content = (await s3.getObject(params).promise()).Body.toString('utf-8');
 
-    return JSON.parse(content);
+    return content;
 };
 
 const retrieveResult = async (jobId: string) => {
