@@ -6,6 +6,7 @@ export const extractTextSsbt = (content: any) => {
     let course: any = {};
     let schedules = [];
     let initiated = false;
+    let courseCode;
 
     const blocks = content.Blocks.filter((block) => !block?.TextType);
 
@@ -18,6 +19,8 @@ export const extractTextSsbt = (content: any) => {
             if (!course.name) {
                 if (text.startsWith('Course Name:')) {
                     const { name, code } = extractSsbtCourse(blocks[i + 1].Text);
+
+                    courseCode = code;
 
                     course = initCourse(name, code);
 
@@ -33,12 +36,16 @@ export const extractTextSsbt = (content: any) => {
 
                     const { name, code } = extractSsbtCourse(text);
 
+                    courseCode = code;
+
                     course = initCourse(name, code);
 
                     schedules = [];
                 } else {
                     if (text.substring(2, 3) === '/' && text.substring(5, 6) === '/') {
-                        schedules.push(initSchedule(text, blocks[i + 1].Text, getAmount(blocks[i + 2]?.Text)));
+                        schedules.push(
+                            initSchedule(text, blocks[i + 1].Text, getAmount(blocks[i + 2]?.Text), courseCode),
+                        );
                     }
                 }
             }
@@ -52,18 +59,15 @@ export const extractTextSsbt = (content: any) => {
     return courses.filter((course) => course.schedules.length);
 };
 
-export const extractTextEve = (content: any) => {
+export const extractTextEve = (content: any): any => {
     const courses = [];
-
-    let course: any = {};
 
     const schedules = [];
     let initiated = false;
 
     const blocks = content.Blocks.filter((block) => !block?.TextType);
 
-    let courseCode: string;
-    let courseName: string;
+    const courseCodes: any[] = [];
 
     for (let i = 0; i < blocks.length; i++) {
         const block = blocks[i];
@@ -71,21 +75,41 @@ export const extractTextEve = (content: any) => {
         const { Text: text } = block;
 
         if (text) {
-            if (!course.name) {
+            if (!courses.length) {
                 if (text === 'Course Fee') {
-                    courseCode = blocks[i + 1].Text;
+                    let courseCode = blocks[i + 1].Text;
 
-                    courseName = blocks[i + 2].Text;
+                    let courseName = blocks[i + 2].Text;
 
-                    course = initCourse(courseName, courseCode);
+                    courseCodes.push({ courseCode, courseName });
+
+                    let course = initCourse(courseName, courseCode);
+
+                    courses.push(course);
+
+                    courseCode = blocks[i + 8].Text;
+
+                    if (courseCode?.startsWith('BSB')) {
+                        courseName = blocks[i + 9].Text;
+
+                        courseCodes.push({ courseCode, courseName });
+
+                        course = initCourse(courseName, courseCode);
+
+                        courses.push(course);
+                    }
 
                     initiated = true;
                 }
             } else if (initiated) {
-                if (text === 'Total fee due to pay now' || text === courseCode) {
+                const courseCode = text === 'Total fee due to pay now' ? courseCodes[0].courseCode : text;
+
+                const course = courseCodes.find((course) => course.courseCode === courseCode);
+
+                if (course) {
                     const feeName = blocks[i + 1].Text;
 
-                    if (courseName !== feeName) {
+                    if (course.courseName !== feeName) {
                         const periods = blocks[i + 3].Text?.split(' ');
 
                         const dates = periods[0].split('/');
@@ -93,7 +117,12 @@ export const extractTextEve = (content: any) => {
                         const startdate = moment(`${dates[2]}-${dates[1]}-${dates[0]}`).subtract(3, 'days');
 
                         schedules.push(
-                            initSchedule(startdate.format('DD/MM/YYYY'), feeName, getAmount(blocks[i + 2]?.Text)),
+                            initSchedule(
+                                startdate.format('DD/MM/YYYY'),
+                                feeName,
+                                getAmount(blocks[i + 2]?.Text),
+                                course.courseCode,
+                            ),
                         );
                     }
                 }
@@ -101,11 +130,19 @@ export const extractTextEve = (content: any) => {
         }
     }
 
-    course.schedules = schedules;
+    return courses
+        .map((course) => {
+            const courseSchedules = schedules.filter((schedule) => schedule.courseCode === course.code);
 
-    courses.push(course);
+            const { name, code } = course;
 
-    return courses.filter((course) => course.schedules.length);
+            return {
+                name,
+                code,
+                schedules: courseSchedules,
+            };
+        })
+        .filter((course) => course.schedules.length);
 };
 
 const getAmount = (text) => parseFloat(text.replace('$', '').replace(',', ''));
@@ -122,11 +159,12 @@ const extractSsbtCourse = (text) => {
     return { name, code };
 };
 
-const initSchedule = (dueDate, feeName, amount) => {
+const initSchedule = (dueDate, feeName, amount, courseCode) => {
     return {
         dueDate,
         feeName,
         amount,
+        courseCode,
     };
 };
 

@@ -29,7 +29,7 @@ const uploadToS3 = async (attachmentsId: number, data: string) => {
     return key;
 };
 
-export const extractor = async (attachmentsId: number, data: string) => {
+export const extractor = async (attachmentsId: number, data: string): Promise<{ key: string; result: any }> => {
     const key = await uploadToS3(attachmentsId, data);
 
     console.info('key:', key);
