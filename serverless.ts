@@ -22,6 +22,13 @@ const serverlessConfiguration: AWS = {
         environment: {
             AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
             NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',
+            DB_HOST: '${ssm:/db/host}',
+            DB_USERNAME: '${ssm:/db/username}',
+            DB_PASSWORD: '${ssm:/db/password}',
+        },
+        vpc: {
+            securityGroupIds: ['${ssm:/vpc/security-group-id}'],
+            subnetIds: ['${ssm:/vpc/subnet-id-1}', '${ssm:/vpc/subnet-id-2}', '${ssm:/vpc/subnet-id-3}'],
         },
         iam: {
             role: {

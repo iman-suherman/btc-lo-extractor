@@ -5,6 +5,8 @@ import { extractor } from '../../lib/extractor';
 const v1 = Router();
 
 v1.post('/extract', async (req: Request, res: Response) => {
+    console.info('req.body:', req.body);
+
     const { attachmentsId, body } = req.body;
 
     const result = await extractor(attachmentsId, body);
