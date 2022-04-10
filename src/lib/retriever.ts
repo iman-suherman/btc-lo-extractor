@@ -8,7 +8,7 @@ AWS.config.update({ region: 'ap-southeast-2' });
 
 const s3 = new AWS.S3();
 
-export const getContents = async (jobId: string) => {
+export const getContents = async (jobId: string): Promise<void> => {
     const files = [];
 
     const textExtract = await retrieveResult(jobId);
@@ -25,18 +25,24 @@ export const getContents = async (jobId: string) => {
 
     const contents = [];
 
+    let attachmentId = null;
+
     for (const file of files) {
         const content = await getS3Content(file);
 
-        if (content.includes('Sydney School of Business and Technology')) {
-            contentType = ContentType.SSBT;
-        }
+        if (file.includes('attachment.txt')) {
+            attachmentId = content;
+        } else {
+            if (content.includes('Sydney School of Business and Technology')) {
+                contentType = ContentType.SSBT;
+            }
 
-        if (content.includes('Eve College')) {
-            contentType = ContentType.EVE;
-        }
+            if (content.includes('Eve College')) {
+                contentType = ContentType.EVE;
+            }
 
-        contents.push(JSON.parse(content));
+            contents.push(JSON.parse(content));
+        }
     }
 
     let result;
@@ -50,6 +56,8 @@ export const getContents = async (jobId: string) => {
             result = extractTextEve(contents[0]);
             break;
     }
+
+    console.info('attachmentId:', attachmentId);
 
     console.info('result:', JSON.stringify(result, null, 2));
 };

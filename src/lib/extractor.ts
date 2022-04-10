@@ -29,7 +29,7 @@ const uploadToS3 = async (attachmentsId: number, data: string) => {
     return key;
 };
 
-export const extractor = async (attachmentsId: number, data: string): Promise<{ key: string; result: any }> => {
+export const extractor = async (attachmentsId: number, data: string): Promise<{ key: string; jobId: string }> => {
     const key = await uploadToS3(attachmentsId, data);
 
     console.info('key:', key);
@@ -55,9 +55,16 @@ export const extractor = async (attachmentsId: number, data: string): Promise<{ 
 
     console.info('params:', JSON.stringify(params));
 
-    const result = await textract.startDocumentAnalysis(params).promise();
+    const { JobId: jobId } = await textract.startDocumentAnalysis(params).promise();
 
-    console.info('result:', result);
+    const object = {
+        Key: `${S3_PREFIX}/${jobId}/attachment.txt`,
+        Body: Buffer.from(attachmentsId.toString(), 'utf-8'),
+        Bucket: S3_BUCKET,
+        ContentType: 'text/plain',
+    };
 
-    return { key, result };
+    await s3Bucket.putObject(object).promise();
+
+    return { key, jobId };
 };
