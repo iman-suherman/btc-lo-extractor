@@ -1,5 +1,7 @@
 import moment from 'moment';
 
+import { Course } from '~/interfaces/course';
+
 export const extractTextSsbt = (content: any) => {
     const courses = [];
 
@@ -59,7 +61,7 @@ export const extractTextSsbt = (content: any) => {
     return courses.filter((course) => course.schedules.length);
 };
 
-export const extractTextEve = (content: any): any => {
+export const extractTextEve = (content: any): Course[] => {
     const courses = [];
 
     const schedules = [];

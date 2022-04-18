@@ -25,6 +25,7 @@ const serverlessConfiguration: AWS = {
             DB_HOST: '${ssm:/db/host}',
             DB_USERNAME: '${ssm:/db/username}',
             DB_PASSWORD: '${ssm:/db/password}',
+            DB_NAME: '${ssm:/db/name}',
         },
         vpc: {
             securityGroupIds: ['${ssm:/vpc/security-group-id}'],

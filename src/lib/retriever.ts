@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import AWS from 'aws-sdk';
 
+import { Course } from '~/interfaces/course';
+import { Result } from '~/interfaces/result';
+
 import { ContentType, S3_BUCKET, S3_PREFIX } from './constants';
 import { extractTextEve, extractTextSsbt } from './extractText';
 
@@ -8,7 +11,7 @@ AWS.config.update({ region: 'ap-southeast-2' });
 
 const s3 = new AWS.S3();
 
-export const getContents = async (jobId: string): Promise<void> => {
+export const getContents = async (jobId: string): Promise<Result> => {
     const files = [];
 
     const textExtract = await retrieveResult(jobId);
@@ -45,21 +48,22 @@ export const getContents = async (jobId: string): Promise<void> => {
         }
     }
 
-    let result;
+    let courses: Course[];
 
     switch (contentType) {
         case ContentType.SSBT:
-            result = extractTextSsbt(contents[0]);
+            courses = extractTextSsbt(contents[0]);
             break;
 
         case ContentType.EVE:
-            result = extractTextEve(contents[0]);
+            courses = extractTextEve(contents[0]);
             break;
     }
 
-    console.info('attachmentId:', attachmentId);
-
-    console.info('result:', JSON.stringify(result, null, 2));
+    return {
+        attachmentId,
+        courses,
+    };
 };
 
 const getS3Content = async (key: string) => {
