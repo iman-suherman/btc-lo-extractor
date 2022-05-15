@@ -107,6 +107,8 @@ export const updateResult = async (result: Result): Promise<void> => {
                 balance,
             };
 
+            console.info('Creating invoice:', invoiceData);
+
             await insertIntoDb('vtiger_invoice', invoiceData);
 
             const productData = {

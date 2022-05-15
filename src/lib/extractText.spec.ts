@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import contentEve1 from '../testData/eve1.json';
 import contentEve2 from '../testData/eve2.json';
 import contentSsbtAdvit from '../testData/ssbt-advit.json';
+import contentSsbtLong from '../testData/ssbt-long.json';
 import contentSsbt from '../testData/ssbt1.json';
 import { extractTextEve, extractTextSsbt } from './extractText';
 
@@ -104,6 +105,38 @@ describe('Extract text', function () {
                         courseCode: ' ICT60220',
                     },
                     { dueDate: '08/01/2024', feeName: 'Material Fee', amount: 100, courseCode: ' ICT60220' },
+                ],
+            },
+        ]);
+    });
+
+    it('should extract text for SSBT Long', function () {
+        const result = extractTextSsbt(contentSsbtLong);
+
+        console.info('result:', JSON.stringify(result));
+
+        expect(result).to.be.eql([
+            {
+                name: 'Advanced Diploma of Hospitality Management',
+                code: ' SIT60316',
+                schedules: [
+                    { dueDate: '12/04/2021', feeName: 'Material Fee', amount: 50, courseCode: ' SIT60316' },
+                    { dueDate: '12/04/2021', feeName: 'Tuition Fee', amount: 1600, courseCode: ' SIT60316' },
+                    { dueDate: '12/04/2021', feeName: 'Enrolment Fee', amount: 250, courseCode: ' SIT60316' },
+                    { dueDate: '11/07/2021', feeName: 'Material Fee', amount: 50, courseCode: ' SIT60316' },
+                    { dueDate: '11/07/2021', feeName: 'Tuition Fee', amount: 1600, courseCode: ' SIT60316' },
+                    { dueDate: '10/10/2021', feeName: 'Material Fee', amount: 50, courseCode: ' SIT60316' },
+                    { dueDate: '10/10/2021', feeName: 'Tuition Fee', amount: 1600, courseCode: ' SIT60316' },
+                    { dueDate: '9/01/2022', feeName: 'Material Fee', amount: 50, courseCode: ' SIT60316' },
+                    { dueDate: '9/01/2022', feeName: 'Tuition Fee', amount: 1600, courseCode: ' SIT60316' },
+                    { dueDate: '10/04/2022', feeName: 'Material Fee', amount: 50, courseCode: ' SIT60316' },
+                    { dueDate: '10/04/2022', feeName: 'Tuition Fee', amount: 1600, courseCode: ' SIT60316' },
+                    { dueDate: '10/07/2022', feeName: 'Material Fee', amount: 50, courseCode: ' SIT60316' },
+                    { dueDate: '10/07/2022', feeName: 'Tuition Fee', amount: 1600, courseCode: ' SIT60316' },
+                    { dueDate: '9/10/2022', feeName: 'Material Fee', amount: 50, courseCode: ' SIT60316' },
+                    { dueDate: '9/10/2022', feeName: 'Tuition Fee', amount: 1600, courseCode: ' SIT60316' },
+                    { dueDate: '9/01/2023', feeName: 'Material Fee', amount: 50, courseCode: ' SIT60316' },
+                    { dueDate: '9/01/2023', feeName: 'Tuition Fee', amount: 1600, courseCode: ' SIT60316' },
                 ],
             },
         ]);

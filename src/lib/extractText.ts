@@ -10,45 +10,43 @@ export const extractTextSsbt = (content: any) => {
     let initiated = false;
     let courseCode;
 
-    const blocks = content.Blocks.filter((block) => !block?.TextType);
+    const blocks = content.Blocks.filter((block) => !block?.TextType && block?.Text);
 
     for (let i = 0; i < blocks.length; i++) {
         const block = blocks[i];
 
         const { Text: text } = block;
 
-        if (text) {
-            if (!course.name) {
-                if (text.startsWith('Course Name:')) {
-                    const { name, code } = extractSsbtCourse(blocks[i + 1].Text);
+        if (!course.name) {
+            if (text.startsWith('Course Name:')) {
+                const { name, code } = extractSsbtCourse(blocks[i + 1].Text);
 
-                    courseCode = code;
+                courseCode = code;
 
-                    course = initCourse(name, code);
+                course = initCourse(name, code);
 
-                    initiated = true;
-                }
+                initiated = true;
             }
+        }
 
-            if (initiated) {
-                if (text.startsWith('Course Name:')) {
-                    course.schedules = schedules;
+        if (initiated) {
+            if (text.startsWith('Course Name:')) {
+                course.schedules = schedules;
 
-                    courses.push(course);
+                courses.push(course);
 
-                    const { name, code } = extractSsbtCourse(text);
+                const { name, code } = extractSsbtCourse(text);
 
-                    courseCode = code;
+                courseCode = code;
 
-                    course = initCourse(name, code);
+                course = initCourse(name, code);
 
-                    schedules = [];
-                } else {
-                    if (text.substring(2, 3) === '/' && text.substring(5, 6) === '/') {
-                        schedules.push(
-                            initSchedule(text, blocks[i + 1].Text, getAmount(blocks[i + 2]?.Text), courseCode),
-                        );
-                    }
+                schedules = [];
+            } else {
+                const tests = text.split('/');
+
+                if (tests.length === 3) {
+                    schedules.push(initSchedule(text, blocks[i + 1].Text, getAmount(blocks[i + 2]?.Text), courseCode));
                 }
             }
         }
