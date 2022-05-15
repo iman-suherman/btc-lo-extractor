@@ -34,7 +34,7 @@ export const getContents = async (jobId: string): Promise<Result> => {
         const content = await getS3Content(file);
 
         if (file.includes('attachment.txt')) {
-            attachmentId = content;
+            attachmentId = parseInt(content);
         } else {
             if (content.includes('Sydney School of Business and Technology')) {
                 contentType = ContentType.SSBT;

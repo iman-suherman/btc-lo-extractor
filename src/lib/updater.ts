@@ -34,7 +34,135 @@ export const updateResult = async (result: Result): Promise<void> => {
 
     const { crmid: tuitionFee } = await getProductId('Tuition Fee');
 
-    console.info('result:', JSON.stringify(result, null, 2));
+    const invoices: Invoice[] = getInvoices({
+        result,
+        applicationFee,
+        paymentPlan,
+        material,
+        tuitionFee,
+        contactid,
+        accountid,
+    });
+
+    for (const invoice of invoices) {
+        const {
+            subject,
+            contactid,
+            invoicedate,
+            subtotal,
+            total,
+            taxtype,
+            accountid,
+            invoicestatus,
+            invoice_no,
+            currency_id,
+            conversion_rate,
+            pre_tax_total,
+            balance,
+            feeName,
+        } = invoice;
+
+        const existing = await getDataFromDB('SELECT * FROM vtiger_invoice WHERE subject = ? AND contactid = ?', [
+            subject,
+            contactid,
+        ]);
+
+        if (!existing) {
+            invoiceid = invoiceid + 1;
+
+            await db.query('UPDATE vtiger_crmentity_seq SET id = ?', [invoiceid]);
+
+            const crmentityData = {
+                crmid: invoiceid,
+                smcreatorid,
+                smownerid,
+                modifiedby,
+                setype: 'Invoice',
+                createdtime: dateNow,
+                modifiedtime: dateNow,
+                version: 0,
+                presence: 1,
+                deleted: 0,
+                smgroupid,
+                source: 'CRM',
+                label: feeName,
+            };
+
+            await insertIntoDb('vtiger_crmentity', crmentityData);
+
+            const invoiceData = {
+                invoiceid,
+                subject,
+                contactid,
+                invoicedate,
+                subtotal,
+                total,
+                taxtype,
+                accountid,
+                invoicestatus,
+                invoice_no,
+                currency_id,
+                conversion_rate,
+                pre_tax_total,
+                balance,
+            };
+
+            await insertIntoDb('vtiger_invoice', invoiceData);
+
+            const productData = {
+                id: invoiceid,
+                productid: invoice.productId,
+                sequence_no: 1,
+                quantity: 1,
+                listprice: total,
+                incrementondel: 1,
+                tax1: 0,
+                tax2: 0,
+                tax3: 0,
+                purchase_cost: 0,
+                margin: total,
+            };
+
+            await insertIntoDb('vtiger_inventoryproductrel', productData);
+        } else {
+            console.info('Existing data found:', existing);
+        }
+    }
+};
+
+export const getInvoices = ({
+    result,
+    applicationFee,
+    paymentPlan,
+    material,
+    tuitionFee,
+    contactid,
+    accountid,
+}: {
+    result: Result;
+    applicationFee: number;
+    paymentPlan: number;
+    material: number;
+    tuitionFee: number;
+    contactid: number;
+    accountid: number;
+}): Invoice[] => {
+    console.info(
+        'parameters:',
+        JSON.stringify(
+            {
+                result,
+                applicationFee,
+                paymentPlan,
+                material,
+                tuitionFee,
+                contactid,
+                accountid,
+            },
+            null,
+            2,
+        ),
+    );
 
     const invoices: Invoice[] = [];
 
@@ -86,81 +214,7 @@ export const updateResult = async (result: Result): Promise<void> => {
 
     console.info('invoices:', invoices);
 
-    for (const invoice of invoices) {
-        invoiceid = invoiceid + 1;
-
-        await db.query('UPDATE vtiger_crmentity_seq SET id = ?', [invoiceid]);
-
-        const {
-            subject,
-            contactid,
-            invoicedate,
-            subtotal,
-            total,
-            taxtype,
-            accountid,
-            invoicestatus,
-            invoice_no,
-            currency_id,
-            conversion_rate,
-            pre_tax_total,
-            balance,
-            feeName,
-        } = invoice;
-
-        const crmentityData = {
-            crmid: invoiceid,
-            smcreatorid,
-            smownerid,
-            modifiedby,
-            setype: 'Invoice',
-            createdtime: dateNow,
-            modifiedtime: dateNow,
-            version: 0,
-            presence: 1,
-            deleted: 0,
-            smgroupid,
-            source: 'CRM',
-            label: feeName,
-        };
-
-        await insertIntoDb('vtiger_crmentity', crmentityData);
-
-        const invoiceData = {
-            invoiceid,
-            subject,
-            contactid,
-            invoicedate,
-            subtotal,
-            total,
-            taxtype,
-            accountid,
-            invoicestatus,
-            invoice_no,
-            currency_id,
-            conversion_rate,
-            pre_tax_total,
-            balance,
-        };
-
-        await insertIntoDb('vtiger_invoice', invoiceData);
-
-        const productData = {
-            id: invoiceid,
-            productid: invoice.productId,
-            sequence_no: 1,
-            quantity: 1,
-            listprice: total,
-            incrementondel: 1,
-            tax1: 0,
-            tax2: 0,
-            tax3: 0,
-            purchase_cost: 0,
-            margin: total,
-        };
-
-        await insertIntoDb('vtiger_inventoryproductrel', productData);
-    }
+    return invoices;
 };
 
 export const evaluateId = ({
@@ -193,7 +247,7 @@ export const evaluateId = ({
         productId = material;
     }
 
-    if (feeName.toLowerCase().includes('Tuition Fee'.toLowerCase())) {
+    if (feeName.toLowerCase().includes('Tuition'.toLowerCase())) {
         productId = tuitionFee;
     }
 
@@ -221,7 +275,7 @@ const insertIntoDb = async (table: string, data: any) => {
 const getDataFromDB = async (query: string, variables: any[]) => {
     const data = await db.query(query, variables);
 
-    return data[0];
+    return data ? data[0] : null;
 };
 
 const getProductId = async (label: string) =>

@@ -2,6 +2,7 @@ import { expect } from 'chai';
 
 import contentEve1 from '../testData/eve1.json';
 import contentEve2 from '../testData/eve2.json';
+import contentSsbtAdvit from '../testData/ssbt-advit.json';
 import contentSsbt from '../testData/ssbt1.json';
 import { extractTextEve, extractTextSsbt } from './extractText';
 
@@ -31,6 +32,78 @@ describe('Extract text', function () {
                     { dueDate: '13/04/2023', feeName: 'CHC50121 Tuition fee', amount: 2000, courseCode: ' CHC50121' },
                     { dueDate: '10/07/2023', feeName: 'CHC50121 Tuition fee', amount: 2000, courseCode: ' CHC50121' },
                     { dueDate: '18/10/2023', feeName: 'CHC50121 Tuition fee', amount: 2000, courseCode: ' CHC50121' },
+                ],
+            },
+        ]);
+    });
+
+    it('should extract text for SSBT Advit', function () {
+        const result = extractTextSsbt(contentSsbtAdvit);
+
+        console.info('result:', JSON.stringify(result));
+
+        expect(result).to.be.eql([
+            {
+                name: 'Advanced Diploma of Information Technology',
+                code: ' ICT60220',
+                schedules: [
+                    { dueDate: '26/11/2021', feeName: 'Enrolment Fee', amount: 250, courseCode: ' ICT60220' },
+                    {
+                        dueDate: '26/11/2021',
+                        feeName: 'Tuition-ADVIT-TNE-NSW-Q12021',
+                        amount: 2300,
+                        courseCode: ' ICT60220',
+                    },
+                    { dueDate: '26/11/2021', feeName: 'Material Fee', amount: 100, courseCode: ' ICT60220' },
+                    {
+                        dueDate: '11/07/2022',
+                        feeName: 'Tuition-ADVIT-TNE-NSW-Q12021',
+                        amount: 2300,
+                        courseCode: ' ICT60220',
+                    },
+                    { dueDate: '11/07/2022', feeName: 'Material Fee', amount: 100, courseCode: ' ICT60220' },
+                    {
+                        dueDate: '10/10/2022',
+                        feeName: 'Tuition-ADVIT-TNE-NSW-Q12021',
+                        amount: 2300,
+                        courseCode: ' ICT60220',
+                    },
+                    { dueDate: '10/10/2022', feeName: 'Material Fee', amount: 100, courseCode: ' ICT60220' },
+                    {
+                        dueDate: '09/01/2023',
+                        feeName: 'Tuition-ADVIT-TNE-NSW-Q12021',
+                        amount: 2300,
+                        courseCode: ' ICT60220',
+                    },
+                    { dueDate: '09/01/2023', feeName: 'Material Fee', amount: 100, courseCode: ' ICT60220' },
+                    {
+                        dueDate: '10/04/2023',
+                        feeName: 'Tuition-ADVIT-TNE-NSW-Q12021',
+                        amount: 2300,
+                        courseCode: ' ICT60220',
+                    },
+                    { dueDate: '10/04/2023', feeName: 'Material Fee', amount: 100, courseCode: ' ICT60220' },
+                    {
+                        dueDate: '10/07/2023',
+                        feeName: 'Tuition-ADVIT-TNE-NSW-Q12021',
+                        amount: 2300,
+                        courseCode: ' ICT60220',
+                    },
+                    { dueDate: '10/07/2023', feeName: 'Material Fee', amount: 100, courseCode: ' ICT60220' },
+                    {
+                        dueDate: '09/10/2023',
+                        feeName: 'Tuition-ADVIT-TNE-NSW-Q12021',
+                        amount: 2300,
+                        courseCode: ' ICT60220',
+                    },
+                    { dueDate: '09/10/2023', feeName: 'Material Fee', amount: 100, courseCode: ' ICT60220' },
+                    {
+                        dueDate: '08/01/2024',
+                        feeName: 'Tuition-ADVIT-TNE-NSW-Q12021',
+                        amount: 2300,
+                        courseCode: ' ICT60220',
+                    },
+                    { dueDate: '08/01/2024', feeName: 'Material Fee', amount: 100, courseCode: ' ICT60220' },
                 ],
             },
         ]);
