@@ -4,4 +4,5 @@ export const S3_PREFIX = 'result';
 export enum ContentType {
     EVE,
     SSBT,
+    ALG,
 }

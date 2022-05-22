@@ -5,7 +5,7 @@ import { Course } from '~/interfaces/course';
 import { Result } from '~/interfaces/result';
 
 import { ContentType, S3_BUCKET, S3_PREFIX } from './constants';
-import { extractTextEve, extractTextSsbt } from './extractText';
+import { extractTextAlg, extractTextEve, extractTextSsbt } from './extractText';
 
 AWS.config.update({ region: 'ap-southeast-2' });
 
@@ -44,6 +44,10 @@ export const getContents = async (jobId: string): Promise<Result> => {
                 contentType = ContentType.EVE;
             }
 
+            if (content.includes('Australian Learning Group')) {
+                contentType = ContentType.ALG;
+            }
+
             contents.push(JSON.parse(content));
         }
     }
@@ -57,6 +61,10 @@ export const getContents = async (jobId: string): Promise<Result> => {
 
         case ContentType.EVE:
             courses = extractTextEve(contents[0]);
+            break;
+
+        case ContentType.ALG:
+            courses = extractTextAlg(contents[1]);
             break;
     }
 

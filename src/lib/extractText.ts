@@ -145,6 +145,63 @@ export const extractTextEve = (content: any): Course[] => {
         .filter((course) => course.schedules.length);
 };
 
+export const extractTextAlg = (content: any): Course[] => {
+    const courses = [];
+
+    let course: any = {};
+
+    const schedules = [];
+    let initiated = false;
+    let ended = false;
+
+    const blocks = content.Blocks.filter((block) => !block?.TextType && block?.Text);
+
+    for (let i = 0; i < blocks.length; i++) {
+        const block = blocks[i];
+
+        const { Text: text } = block;
+
+        const keyStart = 'FEE DUE DATES';
+
+        const keyEnd = 'TOTAL FOR COURSE';
+
+        if (text.startsWith(keyStart) && text.length <= keyStart.length + 1) {
+            const { name, code } = extractAlgCourse(blocks[i + 1].Text);
+
+            if (!initiated) {
+                course = initCourse(name, code);
+
+                initiated = true;
+            }
+
+            for (let a = i + 1; a < blocks.length; a = a + 4) {
+                const subBlock = blocks[a];
+
+                const { Text: subText } = subBlock;
+
+                const dueDate = blocks[a + 3]?.Text || '';
+
+                if (dueDate.startsWith(keyEnd)) {
+                    ended = true;
+                    break;
+                }
+
+                schedules.push(initSchedule(dueDate, blocks[a + 1]?.Text, getAmount(blocks[a + 2]?.Text), subText));
+            }
+        }
+
+        if (ended) {
+            break;
+        }
+    }
+
+    course.schedules = schedules;
+
+    courses.push(course);
+
+    return courses.filter((course) => course.schedules.length);
+};
+
 const getAmount = (text) => parseFloat(text.replace('$', '').replace(',', ''));
 
 const extractSsbtCourse = (text) => {
@@ -158,6 +215,8 @@ const extractSsbtCourse = (text) => {
 
     return { name, code };
 };
+
+const extractAlgCourse = (text: string) => ({ name: text, code: text });
 
 const initSchedule = (dueDate, feeName, amount, courseCode) => {
     return {

@@ -1,11 +1,12 @@
 import { expect } from 'chai';
 
+import contentAlg from '../testData/alg2.json';
 import contentEve1 from '../testData/eve1.json';
 import contentEve2 from '../testData/eve2.json';
 import contentSsbtAdvit from '../testData/ssbt-advit.json';
 import contentSsbtLong from '../testData/ssbt-long.json';
 import contentSsbt from '../testData/ssbt1.json';
-import { extractTextEve, extractTextSsbt } from './extractText';
+import { extractTextAlg, extractTextEve, extractTextSsbt } from './extractText';
 
 describe('Extract text', function () {
     it('should extract text for SSBT', function () {
@@ -277,6 +278,38 @@ describe('Extract text', function () {
                         amount: 1350,
                         courseCode: 'BSB50320',
                     },
+                ],
+            },
+        ]);
+    });
+
+    it.only('should extract text for ALG', function () {
+        const result = extractTextAlg(contentAlg);
+
+        console.info('result:', JSON.stringify(result));
+
+        expect(result).to.be.eql([
+            {
+                name: 'Certificate III in Early Childhood Education and Care',
+                code: ' CHC30121',
+                schedules: [
+                    { dueDate: '24/12/2021', feeName: 'Enrolment Fee', amount: 250, courseCode: ' CHC30121' },
+                    { dueDate: '24/12/2021', feeName: 'CHC30121 Tuition fee', amount: 2000, courseCode: ' CHC30121' },
+                    { dueDate: '24/12/2021', feeName: 'CHC30121 Material fee', amount: 300, courseCode: ' CHC30121' },
+                    { dueDate: '11/04/2022', feeName: 'CHC30121 Tuition fee', amount: 2000, courseCode: ' CHC30121' },
+                    { dueDate: '11/07/2022', feeName: 'CHC30121 Tuition fee', amount: 2000, courseCode: ' CHC30121' },
+                    { dueDate: '10/10/2022', feeName: 'CHC30121 Tuition fee', amount: 2000, courseCode: ' CHC30121' },
+                ],
+            },
+            {
+                name: 'Diploma of Early Childhood Education and Care',
+                code: ' CHC50121',
+                schedules: [
+                    { dueDate: '09/01/2023', feeName: 'CHC50121 Tuition fee', amount: 2000, courseCode: ' CHC50121' },
+                    { dueDate: '09/01/2023', feeName: 'CHC50121 Material Fee', amount: 400, courseCode: ' CHC50121' },
+                    { dueDate: '13/04/2023', feeName: 'CHC50121 Tuition fee', amount: 2000, courseCode: ' CHC50121' },
+                    { dueDate: '10/07/2023', feeName: 'CHC50121 Tuition fee', amount: 2000, courseCode: ' CHC50121' },
+                    { dueDate: '18/10/2023', feeName: 'CHC50121 Tuition fee', amount: 2000, courseCode: ' CHC50121' },
                 ],
             },
         ]);
